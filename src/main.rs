@@ -9,7 +9,19 @@ static DEFAULT_SERVER_ADDRESS: &str = "127.0.0.1";
 static DEFAULT_SERVER_PORT: u16 = 4999;
 static BUFFER_SIZE: usize = 512;
 
-fn process_input(listening: Arc<AtomicBool>) {
+fn send_message(mut stream: &TcpStream, message: &str) {
+    let json_data = serde_json::json!({
+        "data-type": "message",
+        "content": message,
+    });
+
+    println!("Sending message to server: {json_data}");
+
+    stream.write_all(json_data.to_string().as_bytes())
+        .expect(&format!("Failed to send message to the server: {message}"));
+}
+
+fn process_input(stream: TcpStream, listening: Arc<AtomicBool>) {
     loop {
         let mut raw_input = String::new();
         
@@ -29,11 +41,11 @@ fn process_input(listening: Arc<AtomicBool>) {
             break;
         }
 
-        println!("TODO: Wrap in JSON and sent to the server: {message_input}");
+        send_message(&stream, message_input);
     }
 }
 
-fn listen(mut stream: &TcpStream, listening: Arc<AtomicBool>) {
+fn listen(mut stream: TcpStream, listening: Arc<AtomicBool>) {
     println!("Listening to the server...");
 
     let mut buffer = [0; BUFFER_SIZE];
@@ -86,12 +98,14 @@ fn main() {
         });
 
     let stream = connect(&server_address, port);
+    let stream_clone = stream.try_clone().unwrap();
+
     let listening = Arc::new(AtomicBool::new(true));
     let listening_clone = listening.clone();
 
-    let listen_thread = thread::spawn(move || listen(&stream, listening_clone));
+    let listen_thread = thread::spawn(move || listen(stream_clone, listening_clone));
 
-    process_input(listening.clone());
+    process_input(stream, listening.clone());
 
     listen_thread.join().unwrap();
 
