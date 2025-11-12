@@ -1,3 +1,4 @@
+use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
 use std::{env, io};
 use std::net::TcpStream;
 use std::io::{Read, Write};
@@ -8,9 +9,7 @@ static DEFAULT_SERVER_ADDRESS: &str = "127.0.0.1";
 static DEFAULT_SERVER_PORT: u16 = 4999;
 static BUFFER_SIZE: usize = 512;
 
-static listening: bool = true;
-
-fn input() {
+fn process_input(listening: Arc<AtomicBool>) {
     loop {
         let mut raw_input = String::new();
         
@@ -26,6 +25,7 @@ fn input() {
 
         if message_input.eq_ignore_ascii_case("/quit") {
             println!("Quitting...");
+            listening.store(false, Ordering::SeqCst);
             break;
         }
 
@@ -33,13 +33,14 @@ fn input() {
     }
 }
 
-
-fn listen(mut stream: &TcpStream) {
+fn listen(mut stream: &TcpStream, listening: Arc<AtomicBool>) {
     println!("Listening to the server...");
 
     let mut buffer = [0; BUFFER_SIZE];
 
-    while listening {
+    stream.set_nonblocking(true).unwrap();
+
+    while listening.load(Ordering::SeqCst) {
         match stream.read(&mut buffer) {
             Ok(0) => {
                 println!("No data received - likely server has closed the connection");
@@ -52,6 +53,9 @@ fn listen(mut stream: &TcpStream) {
                 } else {
                     eprintln!("Received malformed data from the server: {received_data}");
                 }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                continue;
             }
             Err(e) => {
                 eprintln!("Error reading from the server: {e}");
@@ -82,10 +86,14 @@ fn main() {
         });
 
     let stream = connect(&server_address, port);
+    let listening = Arc::new(AtomicBool::new(true));
+    let listening_clone = listening.clone();
 
-    thread::spawn(move || listen(&stream));
+    let listen_thread = thread::spawn(move || listen(&stream, listening_clone));
 
-    input();
+    process_input(listening.clone());
+
+    listen_thread.join().unwrap();
 
     // loop {}
 }
