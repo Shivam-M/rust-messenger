@@ -1,6 +1,6 @@
-use std::env;
+use std::{env, io};
 use std::net::TcpStream;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::thread;
 use serde_json::Value;
 
@@ -9,6 +9,30 @@ static DEFAULT_SERVER_PORT: u16 = 4999;
 static BUFFER_SIZE: usize = 512;
 
 static listening: bool = true;
+
+fn input() {
+    loop {
+        let mut raw_input = String::new();
+        
+        print!("> ");
+        io::stdout().flush().unwrap();
+
+        io::stdin().read_line(&mut raw_input).unwrap();
+
+        let message_input = raw_input.trim();
+        if message_input.is_empty() {
+            continue;
+        }
+
+        if message_input.eq_ignore_ascii_case("/quit") {
+            println!("Quitting...");
+            break;
+        }
+
+        println!("TODO: Wrap in JSON and sent to the server: {message_input}");
+    }
+}
+
 
 fn listen(mut stream: &TcpStream) {
     println!("Listening to the server...");
@@ -61,5 +85,7 @@ fn main() {
 
     thread::spawn(move || listen(&stream));
 
-    loop {}
+    input();
+
+    // loop {}
 }
