@@ -1,7 +1,18 @@
 use std::env;
+use std::net::TcpStream;
 
 static DEFAULT_SERVER_ADDRESS: &str = "127.0.0.1";
-static DEFAULT_SERVER_PORT: u16 = 5000;
+static DEFAULT_SERVER_PORT: u16 = 4999;
+
+fn connect(server_address: &str, port: u16) -> TcpStream {
+    println!("Attempting to connect to server at {server_address}:{port}...");
+
+    let stream = TcpStream::connect((server_address, port))
+        .expect("Failed to connect to the server");
+
+    println!("Successfully connected to the server");
+    return stream;
+}
 
 fn main() {
     let server_address = env::args().nth(1).unwrap_or_else(|| DEFAULT_SERVER_ADDRESS.to_string());
@@ -13,5 +24,5 @@ fn main() {
             DEFAULT_SERVER_PORT
         });
 
-    println!("Attempting to connect to server at {server_address}:{port}...");
+    let stream = connect(&server_address, port);
 }
