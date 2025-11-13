@@ -10,7 +10,7 @@ static DEFAULT_SERVER_PORT: u16 = 4999;
 static BUFFER_SIZE: usize = 512;
 
 fn send(mut stream: &TcpStream, json_data: &serde_json::Value) {
-    println!("Sending message to server: {json_data}");
+    // println!("Sending message to server: {json_data}");
 
     stream.write_all(json_data.to_string().as_bytes())
         .expect(&format!("Failed to send data to the server"));
@@ -66,10 +66,10 @@ fn process_input(stream: TcpStream, listening: Arc<AtomicBool>) {
 fn process_data(json_data: &serde_json::Value) {
     match json_data["data-type"].as_str() {
         Some("username") => {
-            println!("* Your username has been set to: {}", json_data["username"]);
+            println!("* Your username has been set to: {}", json_data["username"].as_str().unwrap());
         }
         Some("message") => {
-            println!("{}: {}", json_data["username"], json_data["content"]);
+            println!("{}: {}", json_data["username"].as_str().unwrap(), json_data["content"].as_str().unwrap());
         }
         _ => {
             eprintln!("Received unknown data type: {json_data}");
@@ -140,6 +140,4 @@ fn main() {
     process_input(stream, listening.clone());
 
     listen_thread.join().unwrap();
-
-    // loop {}
 }
