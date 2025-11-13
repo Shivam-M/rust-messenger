@@ -38,8 +38,8 @@ fn process_input(stream: TcpStream, listening: Arc<AtomicBool>) {
     loop {
         let mut raw_input = String::new();
         
-        print!("> ");
-        io::stdout().flush().unwrap();
+        // print!("> ");
+        // io::stdout().flush().unwrap();
 
         io::stdin().read_line(&mut raw_input).unwrap();
 
