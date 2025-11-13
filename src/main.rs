@@ -9,16 +9,20 @@ static DEFAULT_SERVER_ADDRESS: &str = "127.0.0.1";
 static DEFAULT_SERVER_PORT: u16 = 4999;
 static BUFFER_SIZE: usize = 512;
 
-fn send_message(mut stream: &TcpStream, message: &str) {
+fn send(mut stream: &TcpStream, json_data: &serde_json::Value) {
+    println!("Sending message to server: {json_data}");
+
+    stream.write_all(json_data.to_string().as_bytes())
+        .expect(&format!("Failed to send data to the server"));
+}
+
+fn send_message(stream: &TcpStream, message: &str) {
     let json_data = serde_json::json!({
         "data-type": "message",
         "content": message,
     });
 
-    println!("Sending message to server: {json_data}");
-
-    stream.write_all(json_data.to_string().as_bytes())
-        .expect(&format!("Failed to send message to the server: {message}"));
+    send(stream, &json_data);
 }
 
 fn process_input(stream: TcpStream, listening: Arc<AtomicBool>) {
