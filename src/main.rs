@@ -63,6 +63,20 @@ fn process_input(stream: TcpStream, listening: Arc<AtomicBool>) {
     }
 }
 
+fn process_data(json_data: &serde_json::Value) {
+    match json_data["data-type"].as_str() {
+        Some("username") => {
+            println!("* Your username has been set to: {}", json_data["username"]);
+        }
+        Some("message") => {
+            println!("{}: {}", json_data["username"], json_data["content"]);
+        }
+        _ => {
+            eprintln!("Received unknown data type: {json_data}");
+        }
+    }
+}
+
 fn listen(mut stream: TcpStream, listening: Arc<AtomicBool>) {
     println!("Listening to the server...");
 
@@ -79,7 +93,7 @@ fn listen(mut stream: TcpStream, listening: Arc<AtomicBool>) {
             Ok(n) => {
                 let received_data = String::from_utf8_lossy(&buffer[..n]).to_string();
                 if let Ok(data) = serde_json::from_str::<Value>(&received_data) {
-                    println!("Received data: {data}");
+                    process_data(&data);
                 } else {
                     eprintln!("Received malformed data from the server: {received_data}");
                 }
