@@ -16,10 +16,27 @@ fn send(mut stream: &TcpStream, json_data: &serde_json::Value) {
         .expect(&format!("Failed to send data to the server"));
 }
 
+fn send_username(stream: &TcpStream, command: &str) {
+    let username = match command.split_whitespace().nth(1) {
+        Some(u) => u,
+        None => {
+            println!("Invalid usage: /username <username>");
+            return;
+        }
+    };
+
+    let json_data = serde_json::json!({
+        "data-type": "username",
+        "username": username
+    });
+
+    send(stream, &json_data);
+}
+
 fn send_message(stream: &TcpStream, message: &str) {
     let json_data = serde_json::json!({
         "data-type": "message",
-        "content": message,
+        "content": message
     });
 
     send(stream, &json_data);
@@ -39,13 +56,18 @@ fn process_input(stream: TcpStream, listening: Arc<AtomicBool>) {
             continue;
         }
 
-        if message_input.eq_ignore_ascii_case("/quit") {
+        if message_input.starts_with("/username") {
+            send_username(&stream, message_input);
+            continue;
+        } else if message_input.eq_ignore_ascii_case("/quit") {
             println!("Quitting...");
             listening.store(false, Ordering::SeqCst);
             break;
+        } else if message_input.starts_with("/") {
+            println!("Unknown command, try either /username <username> or /quit");
+        } else {
+            send_message(&stream, message_input);
         }
-
-        send_message(&stream, message_input);
     }
 }
 
