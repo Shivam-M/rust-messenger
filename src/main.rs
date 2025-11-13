@@ -25,20 +25,12 @@ fn send_username(stream: &TcpStream, command: &str) {
         }
     };
 
-    let json_data = serde_json::json!({
-        "data-type": "username",
-        "username": username
-    });
-
+    let json_data = serde_json::json!({"data-type": "username", "username": username});
     send(stream, &json_data);
 }
 
 fn send_message(stream: &TcpStream, message: &str) {
-    let json_data = serde_json::json!({
-        "data-type": "message",
-        "content": message
-    });
-
+    let json_data = serde_json::json!({"data-type": "message", "content": message});
     send(stream, &json_data);
 }
 
